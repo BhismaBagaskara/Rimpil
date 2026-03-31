@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { InventoryItem, Transaction } from '../types';
 import { 
   BarChart, 
@@ -25,14 +25,20 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    const qInv = query(collection(db, 'inventory'));
+    const invPath = 'inventory';
+    const qInv = query(collection(db, invPath));
     const unsubInv = onSnapshot(qInv, (snapshot) => {
       setInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, invPath);
     });
 
-    const qTrans = query(collection(db, 'transactions'), orderBy('timestamp', 'desc'), limit(50));
+    const transPath = 'transactions';
+    const qTrans = query(collection(db, transPath), orderBy('timestamp', 'desc'), limit(50));
     const unsubTrans = onSnapshot(qTrans, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, transPath);
     });
 
     return () => {

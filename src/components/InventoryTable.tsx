@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { InventoryItem } from '../types';
 import { Search, Download, Filter, ArrowUpDown, Trash2, AlertTriangle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -43,9 +43,12 @@ export default function InventoryTable() {
   };
 
   useEffect(() => {
-    const q = query(collection(db, 'inventory'));
+    const path = 'inventory';
+    const q = query(collection(db, path));
     const unsub = onSnapshot(q, (snapshot) => {
       setInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
     });
     return () => unsub();
   }, []);
@@ -57,12 +60,12 @@ export default function InventoryTable() {
   const confirmDelete = async () => {
     if (!deleteId) return;
     setIsDeleting(true);
+    const path = `inventory/${deleteId}`;
     try {
       await deleteDoc(doc(db, 'inventory', deleteId));
       setDeleteId(null);
     } catch (error) {
-      console.error("Error deleting document: ", error);
-      alert("Gagal menghapus item: " + (error instanceof Error ? error.message : "Unknown error"));
+      handleFirestoreError(error, OperationType.DELETE, path);
     } finally {
       setIsDeleting(false);
     }

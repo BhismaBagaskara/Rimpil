@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Transaction } from '../types';
 import { Search, Download, ArrowUpDown } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -16,13 +16,16 @@ export default function HistoryTable({ type }: HistoryTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction, direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
+    const path = 'transactions';
     const q = query(
-      collection(db, 'transactions'), 
+      collection(db, path), 
       where('type', '==', type),
       orderBy('timestamp', 'desc')
     );
     const unsub = onSnapshot(q, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
     });
     return () => unsub();
   }, [type]);

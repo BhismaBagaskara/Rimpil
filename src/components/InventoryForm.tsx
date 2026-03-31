@@ -14,7 +14,7 @@ import {
   increment,
   setDoc
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { BRANDS, JENIS, GRADES, PALLETES, InventoryItem } from '../types';
 import SearchableDropdown from './SearchableDropdown';
 import { motion, AnimatePresence } from 'motion/react';
@@ -73,10 +73,15 @@ export default function InventoryForm({ type }: InventoryFormProps) {
   useEffect(() => {
     if (type === 'output') {
       const fetchInventory = async () => {
-        const q = query(collection(db, 'inventory'), where('quantity', '>', 0));
-        const snapshot = await getDocs(q);
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
-        setInventoryItems(items);
+        const path = 'inventory';
+        try {
+          const q = query(collection(db, path), where('quantity', '>', 0));
+          const snapshot = await getDocs(q);
+          const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
+          setInventoryItems(items);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, path);
+        }
       };
       fetchInventory();
     }
@@ -94,7 +99,14 @@ export default function InventoryForm({ type }: InventoryFormProps) {
         type,
         timestamp
       };
-      const transRef = await addDoc(collection(db, 'transactions'), transactionData);
+      let transRef;
+      try {
+        transRef = await addDoc(collection(db, 'transactions'), transactionData);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, 'transactions');
+      }
+
+      if (!transRef) return;
 
       // 3. Sync to Google Sheets (Optional, don't block UI)
       try {
@@ -117,27 +129,31 @@ export default function InventoryForm({ type }: InventoryFormProps) {
       const itemKey = `${data.merek}-${data.namaMotif}-${data.jenis}-${data.shading}-${data.grade}-${data.line}-${data.pallete}`.replace(/\s+/g, '_');
       const inventoryRef = doc(db, 'inventory', itemKey);
       
-      if (type === 'input') {
-        await setDoc(inventoryRef, {
-          merek: data.merek,
-          jenis: data.jenis,
-          namaMotif: data.namaMotif,
-          shading: data.shading,
-          grade: data.grade,
-          line: data.line,
-          pallete: data.pallete,
-          quantity: increment(data.quantity),
-          lastUpdated: timestamp
-        }, { merge: true });
-      } else {
-        // Check if enough stock
-        if (selectedItem && selectedItem.quantity < data.quantity) {
-          throw new Error(`Insufficient stock. Available: ${selectedItem.quantity}`);
+      try {
+        if (type === 'input') {
+          await setDoc(inventoryRef, {
+            merek: data.merek,
+            jenis: data.jenis,
+            namaMotif: data.namaMotif,
+            shading: data.shading,
+            grade: data.grade,
+            line: data.line,
+            pallete: data.pallete,
+            quantity: increment(data.quantity),
+            lastUpdated: timestamp
+          }, { merge: true });
+        } else {
+          // Check if enough stock
+          if (selectedItem && selectedItem.quantity < data.quantity) {
+            throw new Error(`Insufficient stock. Available: ${selectedItem.quantity}`);
+          }
+          await updateDoc(inventoryRef, {
+            quantity: increment(-data.quantity),
+            lastUpdated: timestamp
+          });
         }
-        await updateDoc(inventoryRef, {
-          quantity: increment(-data.quantity),
-          lastUpdated: timestamp
-        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `inventory/${itemKey}`);
       }
 
       setSuccess(true);

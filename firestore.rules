@@ -1,59 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper Functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isAdmin() {
-      return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "aabhismab@gmail.com" && request.auth.token.email_verified == true));
-    }
-
-    function isValidInventoryItem(data) {
-      return data.merek is string && data.merek.size() > 0 &&
-             data.jenis is string && data.jenis.size() > 0 &&
-             data.namaMotif is string && data.namaMotif.size() > 0 &&
-             data.shading is string && data.shading.size() > 0 &&
-             data.grade is string && data.grade.size() > 0 &&
-             data.line is string && data.line.size() > 0 &&
-             data.pallete is string && data.pallete.size() > 0 &&
-             data.quantity is number;
-    }
-
-    function isValidTransaction(data) {
-      return data.type in ['input', 'output'] &&
-             data.timestamp is timestamp &&
-             data.line is string &&
-             data.pallete is string &&
-             data.merek is string &&
-             data.jenis is string &&
-             data.namaMotif is string &&
-             data.shading is string &&
-             data.grade is string &&
-             data.quantity is number &&
-             (!('namaPengambil' in data) || data.namaPengambil is string) &&
-             (!('posisi' in data) || data.posisi is string) &&
-             (!('namaPenerima' in data) || data.namaPenerima is string);
-    }
-
+    // Allow public access to inventory and transactions
     match /inventory/{itemId} {
-      allow read: if true;
-      allow create, update: if true;
-      allow delete: if true;
+      allow read, write: if true;
     }
 
     match /transactions/{transactionId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if true;
+      allow read, write: if true;
     }
 
+    // Keep users collection protected
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
+      allow read, write: if false;
     }
   }
 }

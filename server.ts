@@ -66,7 +66,11 @@ async function startServer() {
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error syncing to sheets:", error);
-      res.status(500).json({ error: error.message });
+      let errorMessage = error.message;
+      if (error.code === 403 || error.message.toLowerCase().includes('permission')) {
+        errorMessage = "Google Sheets Permission Error: Pastikan email service account (" + process.env.GOOGLE_CLIENT_EMAIL + ") sudah ditambahkan sebagai Editor di Spreadsheet.";
+      }
+      res.status(500).json({ error: errorMessage });
     }
   });
 
@@ -105,7 +109,11 @@ async function startServer() {
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error syncing inventory to sheets:", error);
-      res.status(500).json({ error: error.message });
+      let errorMessage = error.message;
+      if (error.code === 403 || error.message.toLowerCase().includes('permission')) {
+        errorMessage = "Google Sheets Permission Error: Pastikan email service account (" + process.env.GOOGLE_CLIENT_EMAIL + ") sudah ditambahkan sebagai Editor di Spreadsheet.";
+      }
+      res.status(500).json({ error: errorMessage });
     }
   });
 
