@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { auth } from './firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import React, { useState } from 'react';
 import Layout from './components/Layout';
-import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
@@ -11,33 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
-        <motion.div 
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
-          className="w-12 h-12 border-4 border-neutral-900 dark:border-white border-t-transparent rounded-full animate-spin"
-        />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Login />;
-  }
 
   const renderContent = () => {
     switch (activeTab) {

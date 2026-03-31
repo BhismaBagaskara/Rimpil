@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -6,15 +6,12 @@ import {
   Table as TableIcon, 
   History,
   HelpCircle,
-  LogOut, 
   Sun, 
   Moon,
   Menu,
   X
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { auth } from '../firebase';
-import { signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -26,15 +23,7 @@ interface LayoutProps {
 
 export default function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
-  const [user, setUser] = useState<User | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = () => signOut(auth);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -44,8 +33,6 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
     { id: 'history-input', label: 'Riwayat Input', icon: History },
     { id: 'history-output', label: 'Riwayat Output', icon: History },
   ];
-
-  if (!user) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300">
@@ -118,13 +105,6 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
             >
               {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
               {isSidebarOpen && <span className="ml-4 font-medium text-sm">{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors"
-            >
-              <LogOut size={20} />
-              {isSidebarOpen && <span className="ml-4 font-medium text-sm">Logout</span>}
             </button>
           </div>
         </div>

@@ -13,6 +13,35 @@ export default function InventoryTable() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncToSheets = async () => {
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/sync-inventory-to-sheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inventory: filteredData.map(item => ({
+            ...item,
+            lastUpdated: format(item.lastUpdated.toDate(), 'yyyy-MM-dd HH:mm')
+          }))
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert('Inventory berhasil disinkronkan ke Google Sheets!');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      console.error('Sync failed:', error);
+      alert('Gagal sinkronisasi: ' + error.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   useEffect(() => {
     const q = query(collection(db, 'inventory'));
     const unsub = onSnapshot(q, (snapshot) => {
@@ -110,6 +139,15 @@ export default function InventoryTable() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button 
+            onClick={syncToSheets}
+            disabled={isSyncing}
+            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl transition-colors text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800 flex items-center gap-2"
+            title="Sync to Google Sheets"
+          >
+            {isSyncing ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
+            <span className="text-xs font-bold hidden md:inline">Sync Sheets</span>
+          </button>
           <button 
             onClick={exportToCSV}
             className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl transition-colors text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800"

@@ -89,11 +89,29 @@ export default function InventoryForm({ type }: InventoryFormProps) {
       const timestamp = Timestamp.now();
       
       // 1. Create Transaction
-      await addDoc(collection(db, 'transactions'), {
+      const transactionData = {
         ...data,
         type,
         timestamp
-      });
+      };
+      const transRef = await addDoc(collection(db, 'transactions'), transactionData);
+
+      // 3. Sync to Google Sheets (Optional, don't block UI)
+      try {
+        fetch('/api/sync-to-sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            transaction: {
+              ...transactionData,
+              timestamp: timestamp.toDate().toISOString(),
+              id: transRef.id
+            }
+          })
+        }).catch(err => console.error('Sheets sync failed:', err));
+      } catch (e) {
+        console.error('Sheets sync error:', e);
+      }
 
       // 2. Update Inventory
       const itemKey = `${data.merek}-${data.namaMotif}-${data.jenis}-${data.shading}-${data.grade}-${data.line}-${data.pallete}`.replace(/\s+/g, '_');
