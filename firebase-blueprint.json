@@ -1,0 +1,52 @@
+{
+  "entities": {
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Represents a unique item in the inventory based on its attributes.",
+      "type": "object",
+      "properties": {
+        "merek": { "type": "string", "description": "Brand name" },
+        "jenis": { "type": "string", "description": "Type of item" },
+        "namaMotif": { "type": "string", "description": "Motif name" },
+        "shading": { "type": "string", "description": "Shading name" },
+        "grade": { "type": "string", "description": "Grade of item" },
+        "line": { "type": "string", "description": "Line identifier" },
+        "pallete": { "type": "string", "description": "Pallete location" },
+        "quantity": { "type": "number", "description": "Current quantity in stock" },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["merek", "jenis", "namaMotif", "shading", "grade", "line", "pallete", "quantity"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents an input or output transaction of inventory.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["input", "output"], "description": "Transaction type" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Transaction timestamp" },
+        "line": { "type": "string", "description": "Line identifier" },
+        "pallete": { "type": "string", "description": "Pallete location" },
+        "merek": { "type": "string", "description": "Brand name" },
+        "jenis": { "type": "string", "description": "Type of item" },
+        "namaMotif": { "type": "string", "description": "Motif name" },
+        "shading": { "type": "string", "description": "Shading name" },
+        "grade": { "type": "string", "description": "Grade of item" },
+        "quantity": { "type": "number", "description": "Quantity transacted" },
+        "namaPengambil": { "type": "string", "description": "Person taking the item (output only)" },
+        "posisi": { "type": "string", "description": "Position of the person (output only)" },
+        "namaPenerima": { "type": "string", "description": "Customer/Receiver (output only, tentative)" }
+      },
+      "required": ["type", "timestamp", "line", "pallete", "merek", "jenis", "namaMotif", "shading", "grade", "quantity"]
+    }
+  },
+  "firestore": {
+    "/inventory/{itemId}": {
+      "schema": "InventoryItem",
+      "description": "Collection of current inventory items."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Collection of all inventory transactions."
+    }
+  }
+}
